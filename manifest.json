@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "obsidian-voice-memos",
+	"name": "Voice Memos",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Record Voice Memos on mobile with visual indicator and follow-up actions",
+	"author": "MasterTemple",
+	"authorUrl": "https://github.com/MasterTemple",
 	"isDesktopOnly": false
 }
