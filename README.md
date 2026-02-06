@@ -14,3 +14,6 @@ This exists to provide a visual indicator that an audio file is being recorded o
 
 ![](./assets/screenshot.webp)
 
+## Settings
+
+![](./assets/settings.png)

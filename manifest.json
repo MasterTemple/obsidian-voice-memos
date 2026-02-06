@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-voice-memos",
 	"name": "Voice Memos",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "0.15.0",
 	"description": "Record Voice Memos on mobile with visual indicator and follow-up actions",
 	"author": "MasterTemple",

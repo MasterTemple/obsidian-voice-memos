@@ -1,3 +1,4 @@
+import { DateTime } from "luxon";
 import { VoiceMemoResultModal } from './dialog';
 import { Plugin, Notice, TFile } from 'obsidian';
 import { VoiceMemoSettings, VoiceMemoSettingTab, DEFAULT_SETTINGS } from './settings';
@@ -186,19 +187,18 @@ export default class VoiceMemoPlugin extends Plugin {
 	}
 
 	async saveRecording(blob: Blob): Promise<TFile> {
-		const now = new Date();
-		const yyyy = now.getFullYear();
-		const mm = String(now.getMonth() + 1).padStart(2, "0");
-		const monthName = now.toLocaleString("default", { month: "long" });
-		const dd = String(now.getDate()).padStart(2, "0");
-		const hh = String(now.getHours()).padStart(2, "0");
-		const min = String(now.getMinutes()).padStart(2, "0");
-		const ss = String(now.getSeconds()).padStart(2, "0");
+		const rn = DateTime.now();
+		const baseDir = this.settings.directory.split("/").map((segment) => {
+			try {
+				return rn.toFormat(segment);
+			} catch {
+				return segment;
+			}
+		}).join("/");
 
-		const baseDir = this.settings.directory ||
-			`VoiceMemos/${yyyy}/${mm} - ${monthName}`;
+		const name = rn.toFormat(this.settings.name);
 
-		const path = `${baseDir}/${yyyy}-${mm}-${dd} ${hh}.${min}.${ss}.webm`;
+		const path = `${baseDir}/${name}.webm`;
 
 		await this.app.vault.createFolder(baseDir).catch((e) => console.error(e));
 
