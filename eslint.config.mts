@@ -22,6 +22,13 @@ export default tseslint.config(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	// Disable annoying rules about case
+	{
+		rules: {
+			"obsidianmd/ui/sentence-case": "off",
+			"obsidianmd/settings-tab/no-problematic-settings-headings": "off",
+		},
+	},
 	globalIgnores([
 		"node_modules",
 		"dist",

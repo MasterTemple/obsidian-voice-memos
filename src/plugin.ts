@@ -31,23 +31,21 @@ export default class VoiceMemoPlugin extends Plugin {
 		this.overlayEl = null;
 	}
 
-	wakeLock: any = null;
+	wakeLock: WakeLockSentinel | null = null;
 
 	async requestWakeLock() {
 		try {
-			// @ts-ignore
 			if (navigator.wakeLock) {
-				// @ts-ignore
 				this.wakeLock = await navigator.wakeLock.request("screen");
 			}
-		} catch { }
+		} catch (e) { console.error(e) }
 	}
 
 	async releaseWakeLock() {
 		try {
 			await this.wakeLock?.release();
 			this.wakeLock = null;
-		} catch { }
+		} catch (e) { console.error(e) }
 	}
 
 	initWaveform(stream: MediaStream, canvas: HTMLCanvasElement) {
@@ -71,9 +69,9 @@ export default class VoiceMemoPlugin extends Plugin {
 			buffer.forEach((v, i) => {
 				const x = (i / buffer.length) * canvas.width;
 				const y = (v / 255) * canvas.height;
-				i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+				if (i === 0) ctx.moveTo(x, y)
+				else ctx.lineTo(x, y);
 			});
-			// ctx.strokeStyle = "var(--text-accent)";
 			ctx.strokeStyle = "red";
 			ctx.stroke();
 		};
@@ -93,7 +91,7 @@ export default class VoiceMemoPlugin extends Plugin {
 		let stream: MediaStream;
 		try {
 			stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-		} catch (err) {
+		} catch {
 			new Notice("Microphone permission denied or unavailable");
 			return;
 		}
@@ -105,14 +103,14 @@ export default class VoiceMemoPlugin extends Plugin {
 		this.startTime = Date.now();
 
 		// Prevent device sleep while recording
-		this.requestWakeLock();
+		this.requestWakeLock().catch((e) => console.error(e));
 
 		this.recorder.ondataavailable = (e) => {
 			if (e.data.size > 0) this.chunks.push(e.data);
 		};
 
 		this.recorder.onstop = async () => {
-			this.releaseWakeLock();
+			this.releaseWakeLock().catch((e) => console.error(e));
 			const blob = new Blob(this.chunks, { type: this.recorder?.mimeType });
 			const file = await this.saveRecording(blob);
 			if (this.settings.showDialog) {
@@ -127,7 +125,7 @@ export default class VoiceMemoPlugin extends Plugin {
 				new Notice("Link copied");
 			}
 			if (this.settings.autoOpen) {
-				this.app.workspace.getLeaf(false).openFile(file);
+				this.app.workspace.getLeaf(false).openFile(file).catch((e) => console.error(e));
 			}
 			stream.getTracks().forEach((t) => t.stop());
 		};
@@ -202,7 +200,7 @@ export default class VoiceMemoPlugin extends Plugin {
 
 		const path = `${baseDir}/${yyyy}-${mm}-${dd} ${hh}.${min}.${ss}.webm`;
 
-		await this.app.vault.createFolder(baseDir).catch(() => { });
+		await this.app.vault.createFolder(baseDir).catch((e) => console.error(e));
 
 		const arrayBuffer = await blob.arrayBuffer();
 		return await this.app.vault.createBinary(path, arrayBuffer);
@@ -213,7 +211,7 @@ export default class VoiceMemoPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as VoiceMemoSettings);
 	}
 
 	async saveSettings() {

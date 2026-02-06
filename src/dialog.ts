@@ -32,10 +32,8 @@ export class VoiceMemoResultModal extends Modal {
 		};
 
 		const viewBtn = btnRow.createEl("button", { text: "View" });
-		viewBtn.onclick = () => {
-			// this.app.fileManager.ope
-			// this.app.workspace.getActiveViewOfType(WorkspaceLeaf)
-			this.app.workspace.getLeaf(false).openFile(this.file);
+		viewBtn.onclick = async () => {
+			await this.app.workspace.getLeaf(false).openFile(this.file);
 			this.close();
 		};
 	}

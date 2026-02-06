@@ -28,15 +28,16 @@ export class VoiceMemoSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl("h2", { text: "Voice Memo Settings" });
+		// containerEl.createEl("h2", { text: "Voice Memo Settings" });
+		new Setting(containerEl).setName("Voice Memos").setHeading();
 
 		new Setting(containerEl)
-			.setName("Voice memo directory")
+			.setName("Voice Memo Directory")
 			.setDesc(
-				"Optional. Relative to vault root. Leave empty for default VoiceMemos/YYYY/MM - Month"
+				"Optional. Relative to vault root. Leave empty for default Voice Memos/YYYY/MM - Month"
 			)
 			.addText((text) => text
-				.setPlaceholder("VoiceMemos")
+				.setPlaceholder("Voice Memos")
 				.setValue(this.plugin.settings.directory)
 				.onChange(async (value) => {
 					this.plugin.settings.directory = value.trim();
