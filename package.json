@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-voice-memos",
-	"version": "1.0.0",
+	"version": "1.0.3",
 	"description": "Record Voice Memos on mobile with visual indicator and follow-up actions",
 	"main": "main.js",
 	"type": "module",

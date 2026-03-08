@@ -9,6 +9,10 @@ export default class VoiceMemoPlugin extends Plugin {
 	recorder: MediaRecorder | null = null;
 	chunks: BlobPart[] = [];
 	startTime: number = 0;
+	// Tracks total ms spent paused
+	totalPausedTime: number = 0;
+	// Tracks when current pause started
+	pauseStartTime: number | null = null;
 	overlayEl: HTMLElement | null = null;
 	timerInterval: number | null = null;
 
@@ -63,6 +67,10 @@ export default class VoiceMemoPlugin extends Plugin {
 		const draw = () => {
 			if (!this.recorder) return;
 			requestAnimationFrame(draw);
+
+			// Freeze canvas updates if paused
+			if (this.recorder.state === "paused") return;
+
 			analyser.getByteTimeDomainData(buffer);
 
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -78,6 +86,21 @@ export default class VoiceMemoPlugin extends Plugin {
 		};
 
 		draw();
+	}
+
+	togglePause() {
+		if (!this.recorder) return;
+
+		if (this.recorder.state === "recording") {
+			this.recorder.pause();
+			this.pauseStartTime = Date.now();
+		} else if (this.recorder.state === "paused") {
+			this.recorder.resume();
+			if (this.pauseStartTime) {
+				this.totalPausedTime += Date.now() - this.pauseStartTime;
+				this.pauseStartTime = null;
+			}
+		}
 	}
 
 	async startRecording() {
@@ -102,6 +125,8 @@ export default class VoiceMemoPlugin extends Plugin {
 		});
 		this.chunks = [];
 		this.startTime = Date.now();
+		this.totalPausedTime = 0;   // Reset paused time
+		this.pauseStartTime = null; // Reset pause tracker
 
 		// Prevent device sleep while recording
 		this.requestWakeLock().catch((e) => console.error(e));
@@ -148,11 +173,7 @@ export default class VoiceMemoPlugin extends Plugin {
 		this.overlayEl.addClass("voice-memo-overlay");
 
 		const status = document.createElement("div");
-		if (document.body.hasClass("is-mobile")) {
-			status.setText("●");
-		} else {
-			status.setText("● Recording");
-		}
+		status.setText(document.body.hasClass("is-mobile") ? "●" : "● Recording");
 		status.addClass("recording-indicator");
 
 		const timer = document.createElement("div");
@@ -162,17 +183,48 @@ export default class VoiceMemoPlugin extends Plugin {
 		canvas.width = 120;
 		canvas.height = 30;
 
+		// Pause button creation and click logic
+		const pauseBtn = document.createElement("button");
+		pauseBtn.addClass("recording-pause");
+		pauseBtn.setText("Pause");
+		pauseBtn.onclick = () => {
+			this.togglePause();
+
+			// Update UI based on the new state
+			if (this.recorder?.state === "paused") {
+				pauseBtn.setText("Resume");
+				status.setText(document.body.hasClass("is-mobile") ? "⏸" : "⏸ Paused");
+				status.removeClass("recording-indicator");
+				status.addClass("paused-indicator"); // Add this to your CSS!
+			} else {
+				pauseBtn.setText("Pause");
+				status.setText(document.body.hasClass("is-mobile") ? "●" : "● Recording");
+				status.removeClass("paused-indicator");
+				status.addClass("recording-indicator");
+			}
+		};
+
 		const stopBtn = document.createElement("button");
 		stopBtn.addClass("recording-stop");
 		stopBtn.setText("Stop");
 		stopBtn.onclick = () => this.stopRecording();
 
-		this.overlayEl.append(status, timer, canvas, stopBtn);
+		// MODIFIED: Append the pauseBtn alongside the others
+		this.overlayEl.append(status, timer, canvas, pauseBtn, stopBtn);
 		this.initWaveform(stream, canvas);
 		document.body.appendChild(this.overlayEl);
 
+		// MODIFIED: Timer math to account for paused time
 		this.timerInterval = window.setInterval(() => {
-			const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+			const now = Date.now();
+			let activeTime = now - this.startTime - this.totalPausedTime;
+
+			// If currently paused, subtract the ongoing paused duration
+			if (this.pauseStartTime !== null) {
+				activeTime -= (now - this.pauseStartTime);
+			}
+
+			const elapsed = Math.floor(activeTime / 1000);
 			const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
 			const ss = String(elapsed % 60).padStart(2, "0");
 			timer.setText(`${mm}:${ss}`);
